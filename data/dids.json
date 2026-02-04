@@ -1,0 +1,66 @@
+{
+  "0xF190": {
+    "name": "VIN",
+    "decoder": "ascii",
+    "expected_length": 17
+  },
+  "0xF124": {
+    "name": "ECU Serial Number",
+    "decoder": "ascii",
+    "expected_length": 16
+  },
+  "0xF187": {
+    "name": "Vehicle Manufacturer",
+    "decoder": "ascii",
+    "expected_length": 3
+  },
+  "0xF140": {
+    "name": "Odometer",
+    "decoder": "uint",
+    "byte_count": 4,
+    "unit": "km",
+    "scale": 1.0
+  },
+  "0xA001": {
+    "name": "Key Fob Battery",
+    "decoder": "uint",
+    "byte_count": 2,
+    "unit": "%",
+    "scale": 0.1
+  },
+  "0xF1B0": {
+    "name": "Engine Temperature",
+    "decoder": "int",
+    "byte_count": 2,
+    "unit": "°C",
+    "scale": 0.1
+  },
+  "0xF1C0": {
+    "name": "Fuel Level",
+    "decoder": "float",
+    "byte_count": 4,
+    "unit": "liters",
+    "scale": 1.0
+  },
+  "0xF1D0": {
+    "name": "Battery Voltage",
+    "decoder": "float",
+    "byte_count": 4,
+    "unit": "V",
+    "scale": 1.0
+  },
+  "0xF1E0": {
+    "name": "Tire Pressure Front Left",
+    "decoder": "uint",
+    "byte_count": 2,
+    "unit": "kPa",
+    "scale": 0.1
+  },
+  "0xF1E1": {
+    "name": "Tire Pressure Front Right",
+    "decoder": "uint",
+    "byte_count": 2,
+    "unit": "kPa",
+    "scale": 0.1
+  }
+}

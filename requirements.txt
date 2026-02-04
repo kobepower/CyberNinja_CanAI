@@ -1,0 +1,5 @@
+# CanAI Pro - CyberNinja Edition
+# Requirements
+
+PyQt5>=5.15.0
+pyserial>=3.5
