@@ -54,7 +54,7 @@ class CANInterface(QObject):
         simulate: bool = True,
         serial_port: str = "/dev/ttyUSB0",
         baudrate: int = 115200,
-        sim_interval: float = 1.0,  # Generate frame every 1 second in simulation
+        sim_interval: float = 5.0,  # Generate frame every 5 seconds - very slow to prevent freeze
         max_data_bytes: int = 8,
         reconnect_attempts: int = 5
     ):
@@ -65,12 +65,12 @@ class CANInterface(QObject):
         self.sim_interval = sim_interval
         self.max_data_bytes = max_data_bytes
         self._reconnect_attempts = max(1, reconnect_attempts)
-        self.auto_reconnect = False  # Added for CANMonitorTab compatibility
+        self.auto_reconnect = False
         self._running = threading.Event()
         self._serial: Optional[serial.Serial] = None
         self._thread: Optional[threading.Thread] = None
         self._serial_lock = threading.Lock()
-        self._can_id_range: Tuple[int, int] = (0x100, 0x7FF)
+        self._can_id_range: Tuple[int, int] = (0x700, 0x7FF)  # OBD-II range only
         self._frame_parser: Callable[[str], Optional[CANFrame]] = self._default_frame_parser
         self._frame_count: int = 0
 
@@ -136,21 +136,42 @@ class CANInterface(QObject):
                 self.connection_changed.emit(False)
 
     def _simulate_frames(self) -> None:
-        while self._running.is_set():
-            timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        """Generate simulated CAN frames - limited to prevent UI freeze."""
+        max_frames = 100  # Stop after 100 frames
+        generated = 0
+        
+        while self._running.is_set() and generated < max_frames:
+            try:
+                now = datetime.now()
+                timestamp = f"{now.hour:02d}:{now.minute:02d}:{now.second:02d}.{now.microsecond // 1000:03d}"
+            except:
+                timestamp = "00:00:00.000"
+            
             can_id = f"{random.randint(*self._can_id_range):03X}"
             data = [random.randint(0x00, 0xFF) for _ in range(random.randint(1, self.max_data_bytes))]
             direction = random.choice(list(Direction))
             frame = CANFrame(timestamp, can_id, data, direction)
-            self.frame_received.emit(frame)
+            
+            try:
+                self.frame_received.emit(frame)
+            except:
+                pass  # Ignore emit errors
+                
             self._frame_count += 1
+            generated += 1
             self._running.wait(timeout=self.sim_interval)
+        
+        logger.info(f"[CANInterface] Simulation stopped after {generated} frames")
 
     def simulate_uds_frame(self, sid: int, data: List[int], direction: Direction = Direction.RX) -> None:
         """Simulate a specific UDS frame for testing."""
         if not self.simulate or not self._running.is_set():
             return
-        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        try:
+            now = datetime.now()
+            timestamp = f"{now.hour:02d}:{now.minute:02d}:{now.second:02d}.{now.microsecond // 1000:03d}"
+        except:
+            timestamp = "00:00:00.000"
         can_id = f"{random.randint(*self._can_id_range):03X}"
         frame = CANFrame(timestamp, can_id, [sid] + data, direction)
         self.frame_received.emit(frame)

@@ -74,13 +74,18 @@ class CANTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if col == 4:
                 return decode_uds(frame) or ""
+            if col == 2:  # Data Bytes - format nicely
+                return ' '.join(f'{b:02X}' for b in frame.data)
             return [frame.timestamp, frame.can_id, frame.data, frame.direction.value, ""][col]
         if role == Qt.UserRole:
             return frame
         if role == Qt.BackgroundRole:
             if frequency > CANMonitorTab.NOISY_THRESHOLD:
-                return QBrush(QColor("orange"))
+                return QBrush(QColor("#3a2a00"))  # Dark orange for noisy
             return QBrush(color)
+        if role == Qt.ForegroundRole:
+            # White text for all cells - good contrast on dark backgrounds
+            return QBrush(QColor("#ffffff"))
         return None
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> Optional[str]:
@@ -269,7 +274,15 @@ class CANMonitorTab(QWidget):
     log_message_received = pyqtSignal(str)
 
     NOISY_THRESHOLD = 10
-    COLORS = [QColor("#FFDDDD"), QColor("#DDFFDD"), QColor("#DDDDFF"), QColor("#FFDDBB")]
+    # Dark row colors with good text contrast - cyberpunk theme
+    COLORS = [
+        QColor("#1a2a3a"),  # Dark blue
+        QColor("#2a1a3a"),  # Dark purple  
+        QColor("#1a3a2a"),  # Dark green
+        QColor("#3a2a1a"),  # Dark brown
+        QColor("#1a3a3a"),  # Dark teal
+        QColor("#3a1a2a"),  # Dark magenta
+    ]
 
     def __init__(self):
         super().__init__()
@@ -724,12 +737,13 @@ class CANMonitorTab(QWidget):
         # Handle simulation mode
         if "Simulation" in interface_type:
             self.can_interface.stop()
-            self.can_interface = CANInterface(simulate=True, sim_interval=2.0)
+            self.can_interface = CANInterface(simulate=True, sim_interval=3.0)  # 3 sec between frames
             self._connect_signals()
+            self.paused = False  # UNPAUSE to receive frames!
             self.can_interface.start()
             self.connect_btn.setText("Disconnect")
             self.status_indicator.setStyleSheet("background-color: #00ff66; border-radius: 10px;")
-            self.status_updated.emit("Simulation mode started", "success")
+            self.status_updated.emit("Simulation mode started - frames incoming", "success")
             return
         
         # Validate port selection
